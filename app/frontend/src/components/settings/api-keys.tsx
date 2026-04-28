@@ -1,0 +1,290 @@
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { apiKeysService } from '@/services/api-keys-api';
+import { Eye, EyeOff, Key, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+interface ApiKey {
+  key: string;
+  label: string;
+  description: string;
+  url: string;
+  placeholder: string;
+}
+
+const LLM_API_KEYS: ApiKey[] = [
+  {
+    key: 'DEEPSEEK_API_KEY',
+    label: 'DeepSeek API (推荐)',
+    description: 'DeepSeek模型 (deepseek-chat, deepseek-reasoner) - 国内访问稳定',
+    url: 'https://platform.deepseek.com/',
+    placeholder: 'your-deepseek-api-key'
+  },
+  {
+    key: 'ANTHROPIC_API_KEY',
+    label: 'Anthropic API',
+    description: 'Claude模型 (claude-4-sonnet, claude-4.1-opus等)',
+    url: 'https://anthropic.com/',
+    placeholder: 'your-anthropic-api-key'
+  },
+  {
+    key: 'OPENAI_API_KEY',
+    label: 'OpenAI API',
+    description: 'OpenAI模型 (gpt-4o, gpt-4o-mini等)',
+    url: 'https://platform.openai.com/',
+    placeholder: 'your-openai-api-key'
+  },
+  {
+    key: 'GOOGLE_API_KEY',
+    label: 'Google API',
+    description: 'Gemini模型 (gemini-2.5-flash, gemini-2.5-pro)',
+    url: 'https://ai.dev/',
+    placeholder: 'your-google-api-key'
+  },
+  {
+    key: 'MOONSHOT_API_KEY',
+    label: 'Moonshot (Kimi) API',
+    description: 'Kimi/Moonshot模型 (kimi-k2, kimi-latest, moonshot-v1等)',
+    url: 'https://platform.moonshot.ai/',
+    placeholder: 'your-moonshot-api-key'
+  },
+  {
+    key: 'GROQ_API_KEY',
+    label: 'Groq API',
+    description: 'Groq托管模型 (deepseek, llama3等)',
+    url: 'https://groq.com/',
+    placeholder: 'your-groq-api-key'
+  },
+  {
+    key: 'OPENROUTER_API_KEY',
+    label: 'OpenRouter API',
+    description: 'OpenRouter模型 (通义千问、智谱等)',
+    url: 'https://openrouter.ai/',
+    placeholder: 'your-openrouter-api-key'
+  },
+  {
+    key: 'GIGACHAT_API_KEY',
+    label: 'GigaChat API',
+    description: 'GigaChat模型 (GigaChat-2-Max等)',
+    url: 'https://github.com/ai-forever/gigachat',
+    placeholder: 'your-gigachat-api-key'
+  }
+];
+
+export function ApiKeysSettings() {
+  const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
+  const [visibleKeys, setVisibleKeys] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadApiKeys();
+  }, []);
+
+  const loadApiKeys = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const apiKeysSummary = await apiKeysService.getAllApiKeys();
+      
+      const keysData: Record<string, string> = {};
+      for (const summary of apiKeysSummary) {
+        try {
+          const fullKey = await apiKeysService.getApiKey(summary.provider);
+          keysData[summary.provider] = fullKey.key_value;
+        } catch (err) {
+          console.warn(`Failed to load key for ${summary.provider}:`, err);
+        }
+      }
+      
+      setApiKeys(keysData);
+    } catch (err) {
+      console.error('Failed to load API keys:', err);
+      setError('加载API密钥失败，请重试。');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyChange = async (key: string, value: string) => {
+    setApiKeys(prev => ({
+      ...prev,
+      [key]: value
+    }));
+
+    try {
+      if (value.trim()) {
+        await apiKeysService.createOrUpdateApiKey({
+          provider: key,
+          key_value: value.trim(),
+          is_active: true
+        });
+      } else {
+        try {
+          await apiKeysService.deleteApiKey(key);
+        } catch (err) {
+          console.log(`Key ${key} not found for deletion, which is expected`);
+        }
+      }
+    } catch (err) {
+      console.error(`Failed to save API key ${key}:`, err);
+      setError(`保存 ${key} 失败，请重试。`);
+    }
+  };
+
+  const toggleKeyVisibility = (key: string) => {
+    setVisibleKeys(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  const clearKey = async (key: string) => {
+    try {
+      await apiKeysService.deleteApiKey(key);
+      setApiKeys(prev => {
+        const newKeys = { ...prev };
+        delete newKeys[key];
+        return newKeys;
+      });
+    } catch (err) {
+      console.error(`Failed to delete API key ${key}:`, err);
+      setError(`删除 ${key} 失败，请重试。`);
+    }
+  };
+
+  const renderApiKeySection = (title: string, description: string, keys: ApiKey[], icon: React.ReactNode) => (
+    <Card className="bg-panel border-gray-700 dark:border-gray-700">
+      <CardHeader>
+        <CardTitle className="text-lg font-medium text-primary flex items-center gap-2">
+          {icon}
+          {title}
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {keys.map((apiKey) => (
+          <div key={apiKey.key} className="space-y-2">
+            <button
+              className="text-sm font-medium text-primary hover:text-blue-500 cursor-pointer transition-colors text-left"
+              onClick={() => window.open(apiKey.url, '_blank')}
+            >
+              {apiKey.label}
+            </button>
+            <div className="relative">
+              <Input
+                type={visibleKeys[apiKey.key] ? 'text' : 'password'}
+                placeholder={apiKey.placeholder}
+                value={apiKeys[apiKey.key] || ''}
+                onChange={(e) => handleKeyChange(apiKey.key, e.target.value)}
+                className="pr-20"
+              />
+              <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                {apiKeys[apiKey.key] && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 hover:bg-red-500/10 hover:text-red-500"
+                    onClick={() => clearKey(apiKey.key)}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => toggleKeyVisibility(apiKey.key)}
+                >
+                  {visibleKeys[apiKey.key] ? (
+                    <EyeOff className="h-3 w-3" />
+                  ) : (
+                    <Eye className="h-3 w-3" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-semibold text-primary mb-2">API密钥配置</h2>
+          <p className="text-sm text-muted-foreground">
+            正在加载API密钥...
+          </p>
+        </div>
+        <Card className="bg-panel border-gray-700 dark:border-gray-700">
+          <CardContent className="p-6">
+            <div className="text-sm text-muted-foreground">
+              请稍候，正在加载您的API密钥...
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold text-primary mb-2">API密钥配置</h2>
+        <p className="text-sm text-muted-foreground">
+          配置金融数据和语言模型的API端点和认证凭据。更改会自动保存。
+        </p>
+      </div>
+
+      {error && (
+        <Card className="bg-red-500/5 border-red-500/20">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <Key className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+              <div className="space-y-1">
+                <h4 className="text-sm font-medium text-red-500">错误</h4>
+                <p className="text-xs text-muted-foreground">{error}</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setError(null);
+                    loadApiKeys();
+                  }}
+                  className="text-xs mt-2 p-0 h-auto text-red-500 hover:text-red-400"
+                >
+                  重试
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {renderApiKeySection(
+        '语言模型',
+        '用于访问各种大语言模型提供商的API密钥。',
+        LLM_API_KEYS,
+        <Key className="h-4 w-4" />
+      )}
+
+      <Card className="bg-amber-500/5 border-amber-500/20">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <Key className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+            <div className="space-y-1">
+              <h4 className="text-sm font-medium text-amber-500">安全提示</h4>
+              <p className="text-xs text-muted-foreground">
+                API密钥安全存储在您的本地系统中，更改会自动保存。请妥善保管您的API密钥，不要与他人分享。
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

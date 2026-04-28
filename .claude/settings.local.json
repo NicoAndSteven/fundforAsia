@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(conda run *)",
+      "Bash(D:\\\\Miniconda3\\\\envs\\\\myenv\\\\python.exe compare_data_source.py)",
+      "Bash(echo \"EXIT_CODE=$?\")",
+      "Bash(/d/Miniconda3/envs/myenv/python.exe compare_data_source.py)",
+      "Bash(/d/Miniconda3/envs/myenv/python.exe *)"
+    ]
+  }
+}

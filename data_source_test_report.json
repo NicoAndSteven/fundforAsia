@@ -1,0 +1,93 @@
+{
+  "test_time": "2026-04-26 14:53:23",
+  "python_version": "3.9.25",
+  "results": {
+    "BaoStock": {
+      "name": "BaoStock",
+      "status": "excellent",
+      "features": {
+        "历史数据": {
+          "status": "success",
+          "count": 5,
+          "time": 0.03871464729309082
+        },
+        "财务数据": {
+          "status": "success",
+          "time": 0.025500059127807617
+        },
+        "股票信息": {
+          "status": "success",
+          "count": 8703,
+          "time": 7.805785655975342
+        }
+      },
+      "errors": [],
+      "performance": {}
+    },
+    "eFinance": {
+      "name": "eFinance",
+      "status": "failed",
+      "features": {},
+      "errors": [
+        "测试失败: HTTPSConnectionPool(host='push2his.eastmoney.com', port=443): Max retries exceeded with url: /api/qt/stock/kline/get?fields1=f1%2Cf2%2Cf3%2Cf4%2Cf5%2Cf6%2Cf7%2Cf8%2Cf9%2Cf10%2Cf11%2Cf12%2Cf13&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58%2Cf59%2Cf60%2Cf61&beg=20260419&end=20260426&rtntype=6&secid=0.000001&klt=101&fqt=1 (Caused by ProtocolError('Connection aborted.', RemoteDisconnected('Remote end closed connection without response')))"
+      ],
+      "performance": {}
+    },
+    "qstock": {
+      "name": "qstock",
+      "status": "incompatible",
+      "features": {},
+      "errors": [
+        "依赖库py_mini_racer不兼容"
+      ],
+      "performance": {}
+    },
+    "AKShare": {
+      "name": "AKShare",
+      "status": "partial",
+      "features": {
+        "历史数据": {
+          "status": "failed",
+          "error": "('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))"
+        },
+        "实时行情": {
+          "status": "failed",
+          "error": "('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))"
+        },
+        "财务数据": {
+          "status": "failed",
+          "error": "无数据"
+        },
+        "新闻数据": {
+          "status": "success",
+          "count": 10,
+          "time": 0.09841609001159668
+        }
+      },
+      "errors": [],
+      "performance": {}
+    }
+  },
+  "summary": {
+    "BaoStock": {
+      "status": "excellent",
+      "success_count": 3,
+      "total_count": 3
+    },
+    "eFinance": {
+      "status": "failed",
+      "success_count": 0,
+      "total_count": 0
+    },
+    "qstock": {
+      "status": "incompatible",
+      "success_count": 0,
+      "total_count": 0
+    },
+    "AKShare": {
+      "status": "partial",
+      "success_count": 1,
+      "total_count": 4
+    }
+  }
+}
