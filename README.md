@@ -115,10 +115,7 @@ poetry install
 pip install efinance
 ```
 
-可选（新闻、高管增减持等功能需要）:
-```bash
-pip install akshare
-```
+> efinance 基于东方财富 API，完全免费，无需 API Key。
 
 ### 5. 配置 API Key
 
@@ -214,7 +211,7 @@ uvicorn main:app --reload
 | API Key | ❌ 不需要，完全免费 |
 | 安装 | `pip install efinance` |
 
-> 新闻和高管增减持数据通过 akshare（东方财富新闻源）获取，需安装: `pip install akshare`
+> efinance 基于东方财富 API，完全免费，无需 API Key，支持 A 股/美股/港股的实时与历史数据。
 
 ---
 

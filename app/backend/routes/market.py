@@ -31,7 +31,7 @@ def _set_cache(key: str, data):
 async def get_market_dashboard():
     """
     获取A股市场全景看板数据。
-    数据源：BaoStock + Akshare（东方财富），缓存5分钟。
+    数据源：efinance（东方财富），缓存5分钟。
     """
     cache_key = "dashboard"
 

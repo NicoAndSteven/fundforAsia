@@ -303,118 +303,20 @@ class EFDataAdapter:
         return None
 
     # ------------------------------------------------------------------
-    # Company news  (via akshare fallback)
+    # Company news  (暂不可用，efinance 无新闻 API)
     # ------------------------------------------------------------------
 
-    def get_company_news(
-        self,
-        ticker: str,
-        end_date: str,
-        start_date: Optional[str] = None,
-        limit: int = 1000,
-        api_key: str = None,
-    ) -> List[CompanyNews]:
-        """
-        获取公司新闻 (使用 akshare 东方财富新闻源).
-        """
-        cache_key = f"ef_news_{ticker}_{start_date}_{end_date}_{limit}"
-        if cached_data := _cache.get_company_news(cache_key):
-            return [CompanyNews(**n) for n in cached_data]
-
-        code = self.normalize_ticker(ticker)
-        news_list: list[CompanyNews] = []
-
-        try:
-            import akshare as ak
-            df = ak.stock_news_em(symbol=code)
-            if df is not None and not df.empty:
-                for _, row in df.head(limit).iterrows():
-                    try:
-                        news_list.append(CompanyNews(
-                            ticker=ticker,
-                            title=str(row.get("新闻标题", "")),
-                            author=str(row.get("关键词", "")),
-                            source=str(row.get("文章来源", "东方财富")),
-                            date=str(row.get("发布时间", "")),
-                            url=str(row.get("新闻链接", "")),
-                            sentiment=None,
-                        ))
-                    except Exception:
-                        continue
-        except ImportError:
-            logger.warning("akshare not installed; cannot fetch news.  pip install akshare")
-        except Exception as e:
-            logger.warning("Failed to fetch news for %s: %s", ticker, e)
-
-        if news_list:
-            _cache.set_company_news(cache_key, [n.model_dump() for n in news_list])
-        return news_list
+    def get_company_news(self, ticker: str, end_date: str, start_date: Optional[str] = None, limit: int = 1000, api_key: str = None) -> List[CompanyNews]:
+        """获取公司新闻 (efinance 不提供新闻数据，返回空列表)."""
+        return []
 
     # ------------------------------------------------------------------
-    # Insider trades  (via akshare fallback)
+    # Insider trades  (暂不可用，efinance 无增减持 API)
     # ------------------------------------------------------------------
 
-    def get_insider_trades(
-        self,
-        ticker: str,
-        end_date: str,
-        start_date: Optional[str] = None,
-        limit: int = 1000,
-        api_key: str = None,
-    ) -> List[InsiderTrade]:
-        """
-        获取内部交易/高管增减持 (使用 akshare).
-        """
-        cache_key = f"ef_insider_{ticker}_{start_date}_{end_date}_{limit}"
-        if cached_data := _cache.get_insider_trades(cache_key):
-            return [InsiderTrade(**t) for t in cached_data]
-
-        code = self.normalize_ticker(ticker)
-        trades: list[InsiderTrade] = []
-
-        try:
-            import akshare as ak
-            df = ak.stock_ggcg_em()
-            if df is not None and not df.empty:
-                stock_trades = df[df["代码"] == code]
-                for _, row in stock_trades.head(limit).iterrows():
-                    try:
-                        change_type = str(row.get("持股变动信息-增减", ""))
-                        shares_raw = row.get("持股变动信息-变动数量")
-                        try:
-                            tx_shares = float(shares_raw) * 10000 if shares_raw else 0
-                        except (ValueError, TypeError):
-                            tx_shares = 0
-                        if change_type == "减持":
-                            tx_shares = -abs(tx_shares)
-                        elif change_type == "增持":
-                            tx_shares = abs(tx_shares)
-
-                        trades.append(InsiderTrade(
-                            ticker=ticker,
-                            issuer=str(row.get("名称", ticker)),
-                            name=str(row.get("股东名称", "")),
-                            title="高管/股东",
-                            is_board_director=True,
-                            transaction_date=str(row.get("变动开始日", "")),
-                            transaction_shares=tx_shares,
-                            transaction_price_per_share=None,
-                            transaction_value=None,
-                            shares_owned_before_transaction=None,
-                            shares_owned_after_transaction=None,
-                            security_title="A股",
-                            filing_date=str(row.get("公告日", "")),
-                        ))
-                    except Exception:
-                        continue
-        except ImportError:
-            logger.warning("akshare not installed; cannot fetch insider trades.  pip install akshare")
-        except Exception as e:
-            logger.warning("Failed to fetch insider trades for %s: %s", ticker, e)
-
-        if trades:
-            _cache.set_insider_trades(cache_key, [t.model_dump() for t in trades])
-        return trades
+    def get_insider_trades(self, ticker: str, end_date: str, start_date: Optional[str] = None, limit: int = 1000, api_key: str = None) -> List[InsiderTrade]:
+        """获取内部交易/高管增减持 (efinance 不提供，返回空列表)."""
+        return []
 
     # ------------------------------------------------------------------
     # Line items  (from financial metrics)
@@ -520,9 +422,9 @@ class EFDataAdapter:
         return pd.DataFrame()
 
     def get_market_overview(self) -> dict:
-        """市场全景概览 (通过 akshare)."""
-        import akshare as ak
+        """市场全景概览 (通过 efinance)."""
         from datetime import datetime
+        import efinance as ef
 
         result = {
             "indices": [],
@@ -533,34 +435,56 @@ class EFDataAdapter:
             "updated_at": datetime.now().isoformat(),
         }
 
-        # 指数
-        try:
-            idx_df = ak.stock_zh_index_spot_em()
-            if idx_df is not None and not idx_df.empty:
-                targets = ["sh000001", "sz399001", "sz399006", "sh000688", "sh000300"]
-                for _, row in idx_df[idx_df["代码"].isin(targets)].iterrows():
+        # 指数数据 — 通过 get_quote_snapshot 获取 (HTTPS, 通常不受网络限制)
+        index_codes = {
+            "000001": "上证指数",
+            "399001": "深证成指",
+            "399006": "创业板指",
+            "000688": "科创50",
+            "000300": "沪深300",
+            "000016": "上证50",
+        }
+        for code, name in index_codes.items():
+            try:
+                snap = ef.stock.get_quote_snapshot(code)
+                if snap is not None and not snap.empty:
+                    current = snap.get("最新价", 0)
+                    chg_pct = snap.get("涨跌幅", 0)
+                    if current != current or chg_pct != chg_pct:  # NaN check
+                        continue
                     result["indices"].append({
-                        "code": row["代码"], "name": row["名称"],
-                        "current": round(float(row["最新价"]), 2),
-                        "change_pct": round(float(row["涨跌幅"]), 2),
+                        "code": code,
+                        "name": name,
+                        "current": round(float(current), 2),
+                        "change_pct": round(float(chg_pct), 2),
                     })
-        except Exception as e:
-            logger.debug("market_overview indices: %s", e)
+            except Exception:
+                continue
 
-        # 涨跌统计
+        # 实时行情数据（全市场涨跌分布、涨幅榜等）
         try:
-            spot = ak.stock_zh_a_spot_em()
-            if spot is not None and not spot.empty:
-                total = len(spot)
-                up = len(spot[spot["涨跌幅"] > 0])
-                down = len(spot[spot["涨跌幅"] < 0])
-                result["market_breadth"] = {"total": total, "up": int(up), "down": int(down), "flat": total - up - down}
-                result["top_gainers"] = spot.nlargest(5, "涨跌幅")[["代码", "名称", "涨跌幅"]].to_dict(orient="records")
-                result["top_losers"] = spot.nsmallest(5, "涨跌幅")[["代码", "名称", "涨跌幅"]].to_dict(orient="records")
-                if "成交额" in spot.columns:
-                    result["top_volume"] = spot.nlargest(5, "成交额")[["代码", "名称", "成交额"]].to_dict(orient="records")
+            df = ef.stock.get_realtime_quotes()
+            if df is not None and not df.empty:
+                total = len(df)
+                up = len(df[df["涨跌幅"] > 0]) if "涨跌幅" in df.columns else 0
+                down = len(df[df["涨跌幅"] < 0]) if "涨跌幅" in df.columns else 0
+                result["market_breadth"] = {
+                    "total": int(total),
+                    "up": int(up),
+                    "down": int(down),
+                    "flat": int(total - up - down),
+                }
+
+                if "涨跌幅" in df.columns:
+                    result["top_gainers"] = df.nlargest(5, "涨跌幅")[["股票代码", "股票名称", "涨跌幅"]].rename(
+                        columns={"股票代码": "代码", "股票名称": "名称"}).to_dict(orient="records")
+                    result["top_losers"] = df.nsmallest(5, "涨跌幅")[["股票代码", "股票名称", "涨跌幅"]].rename(
+                        columns={"股票代码": "代码", "股票名称": "名称"}).to_dict(orient="records")
+                if "成交额" in df.columns:
+                    result["top_volume"] = df.nlargest(5, "成交额")[["股票代码", "股票名称", "成交额"]].rename(
+                        columns={"股票代码": "代码", "股票名称": "名称"}).to_dict(orient="records")
         except Exception as e:
-            logger.debug("market_overview breadth: %s", e)
+            logger.debug("market_overview realtime quotes: %s", e)
 
         return result
 

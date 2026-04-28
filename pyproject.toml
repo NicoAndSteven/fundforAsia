@@ -38,8 +38,7 @@ alembic = "^1.12.0"
 langchain-gigachat = "^0.3.12"
 langchain-xai = "^0.2.5"
 scipy = "^1.11.0"
-# A-share free data sources (完全免费，无需 API Key)
-akshare = "^1.14.0"
+# A-share free data source (完全免费，无需 API Key)
 efinance = "^0.12.0"
 
 [tool.poetry.group.dev.dependencies]
