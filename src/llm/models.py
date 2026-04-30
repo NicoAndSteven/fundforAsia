@@ -1,7 +1,6 @@
 import os
 import json
 from langchain_anthropic import ChatAnthropic
-from langchain_deepseek import ChatDeepSeek
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_groq import ChatGroq
 from langchain_xai import ChatXAI
@@ -170,7 +169,17 @@ def get_model(model_name: str, model_provider: ModelProvider, api_keys: dict = N
         if not api_key:
             print(f"API Key Error: Please make sure DEEPSEEK_API_KEY is set in your .env file or provided via API keys.")
             raise ValueError("DeepSeek API key not found.  Please make sure DEEPSEEK_API_KEY is set in your .env file or provided via API keys.")
-        return ChatDeepSeek(model=model_name, api_key=api_key)
+        # Use OpenAI-compatible client with DeepSeek base URL
+        extra_kwargs = {}
+        if "v4" in model_name.lower():
+            extra_kwargs["reasoning_effort"] = "high"
+        return ChatOpenAI(
+            model=model_name,
+            api_key=api_key,
+            base_url="https://api.deepseek.com",
+            temperature=0.7,
+            **extra_kwargs,
+        )
     elif model_provider == ModelProvider.GOOGLE:
         api_key = (api_keys or {}).get("GOOGLE_API_KEY") or os.getenv("GOOGLE_API_KEY")
         if not api_key:

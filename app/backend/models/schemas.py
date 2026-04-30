@@ -63,7 +63,7 @@ class BaseHedgeFundRequest(BaseModel):
     graph_nodes: List[GraphNode]
     graph_edges: List[GraphEdge]
     agent_models: Optional[List[AgentModelConfig]] = None
-    model_name: Optional[str] = "deepseek-chat"
+    model_name: Optional[str] = "deepseek-v4-flash"
     model_provider: Optional[ModelProvider] = ModelProvider.DEEPSEEK
     margin_requirement: float = 0.0
     portfolio_positions: Optional[List[PortfolioPosition]] = None

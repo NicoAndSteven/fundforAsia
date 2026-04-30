@@ -17,7 +17,7 @@ export function GlobalModelSelector() {
     const loadModels = async () => {
       try {
         const fetched = await getModels();
-        setModels(fetched);
+        setModels(fetched.filter(m => m.model_name.trim() !== ''));
 
         // Auto-set global default on first load if not already set
         if (!globalDefaultModel) {

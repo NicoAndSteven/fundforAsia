@@ -11,6 +11,15 @@ class Cache:
         self._line_items_cache: Dict[str, List[Dict[str, Any]]] = {}
         self._insider_trades_cache: Dict[str, List[Dict[str, Any]]] = {}
         self._company_news_cache: Dict[str, List[Dict[str, Any]]] = {}
+        self._generic_cache: Dict[str, List[Dict[str, Any]]] = {}
+
+    def get(self, cache_type: str, key: str) -> Optional[List[Dict[str, Any]]]:
+        """Generic cache get for custom key types."""
+        return self._generic_cache.get(f"{cache_type}:{key}")
+
+    def set(self, cache_type: str, key: str, data: List[Dict[str, Any]]):
+        """Generic cache set for custom key types."""
+        self._generic_cache[f"{cache_type}:{key}"] = data
 
     def _merge_data(self, existing: Optional[List[Dict]], new_data: List[Dict], key_field: str) -> List[Dict]:
         """Merge existing and new data, avoiding duplicates based on a key field."""

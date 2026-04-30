@@ -1,10 +1,60 @@
 """Helper functions for LLM"""
 
 import json
+import logging
 from pydantic import BaseModel
 from src.llm.models import get_model, get_model_info
 from src.utils.progress import progress
 from src.graph.state import AgentState
+
+logger = logging.getLogger(__name__)
+
+# Common signal value mappings (case-insensitive)
+_SIGNAL_MAP = {
+    "buy": "bullish",
+    "bullish": "bullish",
+    "long": "bullish",
+    "overweight": "bullish",
+    "sell": "bearish",
+    "bearish": "bearish",
+    "short": "bearish",
+    "underweight": "bearish",
+    "hold": "neutral",
+    "neutral": "neutral",
+    "sideways": "neutral",
+    "wait": "neutral",
+    "none": "neutral",
+    "reduce": "bearish",
+    "accumulate": "bullish",
+}
+
+
+def _normalize_signal_fields(data: dict) -> dict:
+    """Normalize common signal/confidence value formats before Pydantic validation."""
+    result = dict(data)
+
+    # Normalize signal field (buy/bullish/seel/bearish etc.)
+    for key in ("signal", "action", "rating", "recommendation"):
+        if key in result and isinstance(result[key], str):
+            normalized = _SIGNAL_MAP.get(result[key].strip().lower())
+            if normalized:
+                result["signal"] = normalized
+                break
+
+    # Normalize confidence field (float→int, 0~1→0~100, string→int)
+    for key in ("confidence", "score", "certainty"):
+        if key in result:
+            val = result[key]
+            try:
+                num = float(val)
+                if 0 < num <= 1:
+                    num = num * 100
+                result["confidence"] = int(round(num))
+            except (ValueError, TypeError):
+                pass
+            break
+
+    return result
 
 
 def call_llm(
@@ -70,7 +120,7 @@ def call_llm(
         model_name, model_provider = get_agent_model_config(state, agent_name)
     else:
         # Use system defaults when no state or agent_name is provided
-        model_name = "deepseek-chat"
+        model_name = "deepseek-v4-flash"
         model_provider = "DeepSeek"
 
     # Extract API keys from state if available
@@ -100,7 +150,9 @@ def call_llm(
             if model_info and not model_info.has_json_mode():
                 parsed_result = extract_json_from_response(result.content)
                 if parsed_result:
-                    return pydantic_model(**parsed_result)
+                    # Normalize common signal values before Pydantic validation
+                    normalized = _normalize_signal_fields(parsed_result)
+                    return pydantic_model(**normalized)
             else:
                 return result
 
@@ -109,22 +161,26 @@ def call_llm(
                 progress.update_status(agent_name, None, f"Error - retry {attempt + 1}/{max_retries}")
 
             if attempt == max_retries - 1:
-                print(f"Error in LLM call after {max_retries} attempts: {e}")
+                error_msg = f"Error in LLM call after {max_retries} attempts: {e}"
+                logger.warning(error_msg)
                 # Use default_factory if provided, otherwise create a basic default
                 if default_factory:
                     return default_factory()
-                return create_default_response(pydantic_model)
+                return create_default_response(pydantic_model, error_msg)
 
     # This should never be reached due to the retry logic above
     return create_default_response(pydantic_model)
 
 
-def create_default_response(model_class: type[BaseModel]) -> BaseModel:
+def create_default_response(model_class: type[BaseModel], error_msg: str | None = None) -> BaseModel:
     """Creates a safe default response based on the model's fields."""
+    reason = error_msg or "Error in analysis, using default"
     default_values = {}
     for field_name, field in model_class.model_fields.items():
-        if field.annotation == str:
-            default_values[field_name] = "Error in analysis, using default"
+        if field.annotation == str and ("reason" in field_name.lower() or "think" in field_name.lower()):
+            default_values[field_name] = reason
+        elif field.annotation == str:
+            default_values[field_name] = reason
         elif field.annotation == float:
             default_values[field_name] = 0.0
         elif field.annotation == int:
@@ -142,8 +198,9 @@ def create_default_response(model_class: type[BaseModel]) -> BaseModel:
 
 
 def extract_json_from_response(content: str) -> dict | None:
-    """Extracts JSON from markdown-formatted response."""
+    """Extracts JSON from markdown-formatted response, with plain JSON fallback."""
     try:
+        # Try markdown code block first (```json ... ```)
         json_start = content.find("```json")
         if json_start != -1:
             json_text = content[json_start + 7 :]  # Skip past ```json
@@ -151,9 +208,24 @@ def extract_json_from_response(content: str) -> dict | None:
             if json_end != -1:
                 json_text = json_text[:json_end].strip()
                 return json.loads(json_text)
+        # Fallback: try to find and parse JSON object/array in the response
+        cleaned = content.strip()
+        for start_char, end_char in [('{', '}'), ('[', ']')]:
+            start_idx = cleaned.find(start_char)
+            if start_idx != -1:
+                depth = 0
+                for i in range(start_idx, len(cleaned)):
+                    if cleaned[i] == start_char:
+                        depth += 1
+                    elif cleaned[i] == end_char:
+                        depth -= 1
+                        if depth == 0:
+                            json_str = cleaned[start_idx:i + 1]
+                            return json.loads(json_str)
+        return None
     except Exception as e:
         print(f"Error extracting JSON from response: {e}")
-    return None
+        return None
 
 
 def get_agent_model_config(state, agent_name):
@@ -172,7 +244,7 @@ def get_agent_model_config(state, agent_name):
             return model_name, model_provider.value if hasattr(model_provider, 'value') else str(model_provider)
     
     # Fall back to global configuration (system defaults)
-    model_name = state.get("metadata", {}).get("model_name") or "deepseek-chat"
+    model_name = state.get("metadata", {}).get("model_name") or "deepseek-v4-flash"
     model_provider = state.get("metadata", {}).get("model_provider") or "DeepSeek"
     
     # Convert enum to string if necessary

@@ -296,6 +296,9 @@ class EFDataAdapter:
         pe_ratio = _val(quote, "动态市盈率")
         close_price = _val(quote, "最新价")
 
+        # 每股经营现金流量 (operating CF per share)
+        oper_cf_ps = _val(perf, "每股经营现金流量")
+
         metrics = FinancialMetrics(
             ticker=ticker,
             report_period=str(perf.get("公告日期", end_date))[:10] if perf else end_date,
@@ -304,7 +307,7 @@ class EFDataAdapter:
             market_cap=market_cap,
             enterprise_value=market_cap,
             price_to_earnings_ratio=pe_ratio,
-            price_to_book_ratio=None,  # efinance 不直接提供
+            price_to_book_ratio=None,
             price_to_sales_ratio=None,
             enterprise_value_to_ebitda_ratio=None,
             enterprise_value_to_revenue_ratio=None,
@@ -316,30 +319,14 @@ class EFDataAdapter:
             return_on_equity=_val(perf, "净资产收益率"),
             return_on_assets=None,
             return_on_invested_capital=None,
-            asset_turnover=None,
-            inventory_turnover=None,
-            receivables_turnover=None,
-            days_sales_outstanding=None,
-            operating_cycle=None,
-            working_capital_turnover=None,
             current_ratio=None,
             quick_ratio=None,
-            cash_ratio=None,
-            operating_cash_flow_ratio=None,
             debt_to_equity=None,
-            debt_to_assets=None,
-            interest_coverage=None,
             revenue_growth=_val(perf, "营业收入同比增长"),
             earnings_growth=_val(perf, "净利润同比增长"),
-            book_value_growth=None,
             earnings_per_share=_val(perf, "每股收益"),
-            earnings_per_share_growth=None,
-            free_cash_flow_growth=None,
-            operating_income_growth=None,
-            ebitda_growth=None,
-            payout_ratio=None,
             book_value_per_share=_val(perf, "每股净资产"),
-            free_cash_flow_per_share=None,
+            free_cash_flow_per_share=oper_cf_ps,
         )
 
         result = [metrics]
@@ -428,14 +415,17 @@ class EFDataAdapter:
     @staticmethod
     def _map_line_item(item: str) -> Optional[str]:
         mapping = {
+            # ── Income Statement ──
             "revenue": "营业收入",
             "net_income": "净利润",
             "eps": "每股收益",
+            "earnings_per_share": "每股收益",
             "roe": "净资产收益率",
             "gross_margin": "销售毛利率",
             "revenue_growth": "营业收入同比增长",
             "earnings_growth": "净利润同比增长",
             "book_value_per_share": "每股净资产",
+            "operating_cash_flow_per_share": "每股经营现金流量",
         }
         return mapping.get(item)
 

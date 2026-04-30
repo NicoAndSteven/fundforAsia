@@ -1,12 +1,14 @@
 """
 统一数据API接口
 数据源：efinance（东方财富，实时A股/美股/港股数据，无需API Key）
+        akshare（补充数据源，财务指标、新闻、增减持等）
 """
 from __future__ import annotations
 from typing import List, Optional
 import pandas as pd
 from src.data.models import Price, FinancialMetrics, InsiderTrade, CompanyNews, LineItem
 from src.tools.api_efinance import get_ef_adapter
+from src.tools.api_akshare import get_ak_adapter
 
 
 def prices_to_df(prices: List[Price]) -> pd.DataFrame:
@@ -39,9 +41,20 @@ def get_financial_metrics(
     limit: int = 10,
     api_key: str = None,
 ) -> List[FinancialMetrics]:
-    """获取A股财务指标数据"""
-    adapter = get_ef_adapter()
-    return adapter.get_financial_metrics(ticker, end_date, period, limit, api_key)
+    """
+    获取A股财务指标数据。
+    优先使用 akshare（更丰富的字段），fallback 到 efinance。
+    """
+    # Try akshare first (has more fields)
+    ak_adapter = get_ak_adapter()
+    ak_metrics = ak_adapter.get_financial_metrics(ticker, end_date, period, limit, api_key)
+
+    if ak_metrics:
+        return ak_metrics
+
+    # Fallback to efinance
+    ef_adapter = get_ef_adapter()
+    return ef_adapter.get_financial_metrics(ticker, end_date, period, limit, api_key)
 
 
 def get_insider_trades(
@@ -52,6 +65,13 @@ def get_insider_trades(
     api_key: str = None,
 ) -> List[InsiderTrade]:
     """获取A股高管持股变动数据"""
+    # Try akshare first
+    ak_adapter = get_ak_adapter()
+    ak_trades = ak_adapter.get_insider_trades(ticker, end_date, start_date, limit, api_key)
+    if ak_trades:
+        return ak_trades
+
+    # Fallback to efinance
     adapter = get_ef_adapter()
     return adapter.get_insider_trades(ticker, end_date, start_date, limit, api_key)
 
@@ -64,6 +84,13 @@ def get_company_news(
     api_key: str = None,
 ) -> List[CompanyNews]:
     """获取A股公司新闻数据"""
+    # Try akshare first
+    ak_adapter = get_ak_adapter()
+    ak_news = ak_adapter.get_company_news(ticker, end_date, start_date, limit, api_key)
+    if ak_news:
+        return ak_news
+
+    # Fallback to efinance
     adapter = get_ef_adapter()
     return adapter.get_company_news(ticker, end_date, start_date, limit, api_key)
 
@@ -93,6 +120,13 @@ def search_line_items(
     api_key: str = None,
 ) -> List[LineItem]:
     """搜索A股财务报表行项目"""
+    # Try akshare first (more line items, multi-period)
+    ak_adapter = get_ak_adapter()
+    ak_items = ak_adapter.search_line_items(ticker, line_items, end_date, period, limit, api_key)
+    if ak_items:
+        return ak_items
+
+    # Fallback to efinance
     adapter = get_ef_adapter()
     return adapter.search_line_items(ticker, line_items, end_date, period, limit, api_key)
 
@@ -155,13 +189,6 @@ def get_intraday_prices(
 
 
 def get_sector_stocks(sector_code: str) -> List[str]:
-    """获取指定板块的所有成分股代码。
-
-    Args:
-        sector_code: 板块代码，如 "BK0420"（半导体）
-
-    Returns:
-        股票代码列表
-    """
+    """获取指定板块的所有成分股代码。"""
     adapter = get_ef_adapter()
     return adapter.get_sector_stocks(sector_code)

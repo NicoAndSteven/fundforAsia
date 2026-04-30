@@ -50,7 +50,7 @@ def run_hedge_fund(
     portfolio: dict,
     show_reasoning: bool = False,
     selected_analysts: list[str] = [],
-    model_name: str = "deepseek-chat",
+    model_name: str = "deepseek-v4-flash",
     model_provider: str = "DeepSeek",
 ):
     # Start progress tracking

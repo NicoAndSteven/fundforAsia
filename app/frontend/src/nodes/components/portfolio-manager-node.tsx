@@ -7,7 +7,7 @@ import { CardContent } from '@/components/ui/card';
 import { ModelSelector } from '@/components/ui/llm-selector';
 import { useFlowContext } from '@/contexts/flow-context';
 import { useNodeContext } from '@/contexts/node-context';
-import { getDefaultModel, getModels, LanguageModel } from '@/data/models';
+import { getModels, LanguageModel } from '@/data/models';
 import { useNodeState } from '@/hooks/use-node-state';
 import { useOutputNodeConnection } from '@/hooks/use-output-node-connection';
 import { cn } from '@/lib/utils';
@@ -54,16 +54,8 @@ export function PortfolioManagerNode({
   useEffect(() => {
     const loadModels = async () => {
       try {
-        const [models, defaultModel] = await Promise.all([
-          getModels(),
-          getDefaultModel()
-        ]);
+        const models = await getModels();
         setAvailableModels(models);
-        
-        // Set default model if no model is currently selected
-        if (!selectedModel && defaultModel) {
-          setSelectedModel(defaultModel);
-        }
       } catch (error) {
         console.error('Failed to load models:', error);
         // Keep empty array as fallback
@@ -71,7 +63,7 @@ export function PortfolioManagerNode({
     };
 
     loadModels();
-  }, [setAvailableModels, selectedModel, setSelectedModel]);
+  }, [setAvailableModels]);
 
   // Update the node context when the model changes
   useEffect(() => {
@@ -143,6 +135,19 @@ export function PortfolioManagerNode({
                   onChange={handleModelChange}
                   placeholder="自动"
                 />
+                {selectedModel && (
+                  <button
+                    onClick={() => setSelectedModel(null)}
+                    className="text-subtitle text-primary hover:text-foreground transition-colors text-left"
+                  >
+                    恢复全局默认
+                  </button>
+                )}
+                {!selectedModel && globalDefaultModel && (
+                  <span className="text-subtitle text-muted-foreground text-xs">
+                    全局: {globalDefaultModel.display_name}
+                  </span>
+                )}
               </div>
             </div>
           </div>

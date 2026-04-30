@@ -413,7 +413,7 @@ async def quick_analysis(request_data: QuickAnalysisRequest, request: Request, d
             start_date=start_date,
             end_date=end_date,
             initial_capital=request_data.initial_capital,
-            model_name=request_data.model_name or "deepseek-chat",
+            model_name=request_data.model_name or "deepseek-v4-flash",
             model_provider=request_data.model_provider or "DeepSeek",
             request=request_data,  # Pass full request for use_llm_judgment access
         )

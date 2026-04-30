@@ -34,7 +34,7 @@ export const getDefaultModel = async (): Promise<LanguageModel | null> => {
   try {
     const models = await getModels();
     // Prefer DeepSeek V3 as default, fall back to first available model
-    return models.find(model => model.model_name === "deepseek-chat") || models[0] || null;
+    return models.find(model => model.model_name === "deepseek-v4-flash") || models[0] || null;
   } catch (error) {
     console.error('Failed to get default model:', error);
     return null;
