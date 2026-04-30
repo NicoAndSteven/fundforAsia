@@ -98,8 +98,8 @@ export const flowService = {
   // Create a default flow for new users
   async createDefaultFlow(nodes: any, edges: any, viewport?: any): Promise<Flow> {
     return this.createFlow({
-      name: 'My First Flow',
-      description: 'Welcome to AI Hedge Fund! Start building your flow here.',
+      name: '我的第一个流程',
+      description: '欢迎使用 AI Hedge Fund！在此开始构建你的流程。',
       nodes,
       edges,
       viewport,

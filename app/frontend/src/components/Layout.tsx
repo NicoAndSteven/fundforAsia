@@ -38,14 +38,27 @@ function LayoutContent({ children }: { children: ReactNode }) {
   // Check if market dashboard is active
   const isMarketDashboardActive = activeTabId === 'market-dashboard';
 
-  // Auto-collapse sidebars when market dashboard is active
+  // Auto-collapse sidebars when market dashboard is active, restore when leaving
+  const [savedSidebarState, setSavedSidebarState] = useState({ left: false, right: false });
+  const [savedBottomState, setSavedBottomState] = useState(false);
+
   useEffect(() => {
     if (isMarketDashboardActive) {
+      // Save current state before collapsing
+      setSavedSidebarState({ left: isLeftCollapsed, right: isRightCollapsed });
+      setSavedBottomState(isBottomCollapsed);
       setIsLeftCollapsed(true);
       setIsRightCollapsed(true);
       collapseBottomPanel();
+    } else {
+      // Restore saved state when leaving dashboard
+      setIsLeftCollapsed(savedSidebarState.left);
+      setIsRightCollapsed(savedSidebarState.right);
+      if (!savedBottomState) {
+        expandBottomPanel();
+      }
     }
-  }, [isMarketDashboardActive, collapseBottomPanel]);
+  }, [isMarketDashboardActive, collapseBottomPanel, expandBottomPanel]);
 
   const handleSettingsClick = () => {
     const tabData = TabService.createSettingsTab();

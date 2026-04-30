@@ -71,13 +71,22 @@ export function InvestmentReportDialog({
     }
   };
 
+  const getSignalBadgeText = (signal: string) => {
+    switch (signal) {
+      case 'bullish': return '看涨';
+      case 'bearish': return '看跌';
+      case 'neutral': return '中性';
+      default: return signal;
+    }
+  };
+
   const getSignalBadge = (signal: string) => {
     const variant = signal === 'bullish' ? 'success' :
                    signal === 'bearish' ? 'destructive' : 'outline';
 
     return (
       <Badge variant={variant as any}>
-        {signal}
+        {getSignalBadgeText(signal)}
       </Badge>
     );
   };
@@ -111,28 +120,28 @@ export function InvestmentReportDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">Investment Report</DialogTitle>
+          <DialogTitle className="text-xl font-bold">投资报告</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-8 my-4">
           {/* Summary Section */}
           <section>
-            <h2 className="text-lg font-semibold mb-4">Summary</h2>
+            <h2 className="text-lg font-semibold mb-4">摘要</h2>
             <Card>
               <CardHeader className="pb-2">
                 <CardDescription>
-                  Recommended trading actions based on analyst signals
+                 基于分析师信号的推荐交易操作
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Ticker</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Action</TableHead>
-                      <TableHead>Quantity</TableHead>
-                      <TableHead>Confidence</TableHead>
+                      <TableHead>代码</TableHead>
+                      <TableHead>价格</TableHead>
+                      <TableHead>操作</TableHead>
+                      <TableHead>数量</TableHead>
+                      <TableHead>置信度</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -142,11 +151,11 @@ export function InvestmentReportDialog({
                       return (
                         <TableRow key={ticker}>
                           <TableCell className="font-medium">{ticker}</TableCell>
-                          <TableCell>${typeof currentPrice === 'number' ? currentPrice.toFixed(2) : currentPrice}</TableCell>
+                          <TableCell>¥{typeof currentPrice === 'number' ? currentPrice.toFixed(2) : currentPrice}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               {getActionIcon(decision.action as ActionType)}
-                              <span className="capitalize">{decision.action}</span>
+                              <span className="capitalize">{decision.action === 'long' ? '买入' : decision.action === 'short' ? '卖出' : '持有'}</span>
                             </div>
                           </TableCell>
                           <TableCell>{decision.quantity}</TableCell>
@@ -161,7 +170,7 @@ export function InvestmentReportDialog({
           </section>
           {/* Analyst Signals Section */}
           <section>
-            <h2 className="text-lg font-semibold mb-4">Analyst Signals</h2>
+            <h2 className="text-lg font-semibold mb-4">分析师信号</h2>
             <Accordion type="multiple" className="w-full">
               {tickers.map(ticker => (
                 <AccordionItem key={ticker} value={ticker}>
@@ -171,7 +180,9 @@ export function InvestmentReportDialog({
                       <div className="flex items-center gap-1">
                         {getActionIcon(outputNodeData.decisions[ticker].action as ActionType)}
                         <span className="text-sm font-normal text-muted-foreground">
-                          {outputNodeData.decisions[ticker].action} {outputNodeData.decisions[ticker].quantity} shares
+                          {outputNodeData.decisions[ticker].action === 'long' ? '买入' :
+                           outputNodeData.decisions[ticker].action === 'short' ? '卖出' :
+                           '持有'} {outputNodeData.decisions[ticker].quantity} 股
                         </span>
                       </div>
                     </div>

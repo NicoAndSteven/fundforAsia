@@ -1,11 +1,13 @@
 import { useLayoutContext } from '@/contexts/layout-context';
 import { useResizable } from '@/hooks/use-resizable';
 import { cn } from '@/lib/utils';
-import { BarChart3, FileText, X } from 'lucide-react';
-import { ReactNode, useEffect } from 'react';
+import { BarChart3, FileText, Star, X } from 'lucide-react';
+import { ReactNode, useEffect, useRef } from 'react';
 import { Button } from '../../ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
-import { OutputTab, ConsensusTab } from './tabs';
+import { OutputTab, ConsensusTab, MasterRecommendations } from './tabs';
+import { useFlowContext } from '@/contexts/flow-context';
+import { useNodeContext } from '@/contexts/node-context';
 
 interface BottomPanelProps {
   children?: ReactNode;
@@ -22,6 +24,26 @@ export function BottomPanel({
   onHeightChange,
 }: BottomPanelProps) {
   const { currentBottomTab, setBottomPanelTab } = useLayoutContext();
+  const { currentFlowId } = useFlowContext();
+  const { getOutputNodeDataForFlow } = useNodeContext();
+
+  // Auto-switch to master tab when master_report arrives (only once per run)
+  const hasAutoSwitched = useRef(false);
+
+  const flowId = currentFlowId?.toString() || null;
+  const outputData = getOutputNodeDataForFlow(flowId);
+  const masterReportReady = outputData?.master_report != null;
+
+  useEffect(() => {
+    if (masterReportReady && !hasAutoSwitched.current) {
+      hasAutoSwitched.current = true;
+      setBottomPanelTab('master');
+    }
+    // Reset flag when a new run starts (outputData becomes null/empty)
+    if (!masterReportReady) {
+      hasAutoSwitched.current = false;
+    }
+  }, [masterReportReady, setBottomPanelTab]);
   
   const { height, isDragging, elementRef, startResize } = useResizable({
     defaultHeight: 300,
@@ -74,6 +96,13 @@ export function BottomPanel({
                 <BarChart3 size={14} />
                 共识
               </TabsTrigger>
+              <TabsTrigger
+                value="master"
+                className="flex items-center gap-2 px-3 py-1.5 text-sm data-[state=active]:active-item text-muted-foreground"
+              >
+                <Star size={14} />
+                大师推荐
+              </TabsTrigger>
             </TabsList>
             
             <Button
@@ -96,6 +125,9 @@ export function BottomPanel({
           </TabsContent>
           <TabsContent value="consensus" className="h-full m-0 p-4">
             <ConsensusTab className="h-full" />
+          </TabsContent>
+          <TabsContent value="master" className="h-full m-0 p-4">
+            <MasterRecommendations className="h-full" />
           </TabsContent>
         </Tabs>
       </div>

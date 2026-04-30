@@ -1,5 +1,5 @@
 import { SidebarStorageService } from '@/services/sidebar-storage';
-import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 
 interface LayoutContextType {
   isBottomCollapsed: boolean;
@@ -35,17 +35,17 @@ export function LayoutProvider({ children }: LayoutProviderProps) {
     SidebarStorageService.saveBottomPanelState(isBottomCollapsed);
   }, [isBottomCollapsed]);
 
-  const expandBottomPanel = () => {
+  const expandBottomPanel = useCallback(() => {
     setIsBottomCollapsed(false);
-  };
+  }, []);
 
-  const collapseBottomPanel = () => {
+  const collapseBottomPanel = useCallback(() => {
     setIsBottomCollapsed(true);
-  };
+  }, []);
 
-  const toggleBottomPanel = () => {
-    setIsBottomCollapsed(!isBottomCollapsed);
-  };
+  const toggleBottomPanel = useCallback(() => {
+    setIsBottomCollapsed(prev => !prev);
+  }, []);
 
   const setBottomPanelTab = (tab: string) => {
     setCurrentBottomTab(tab);

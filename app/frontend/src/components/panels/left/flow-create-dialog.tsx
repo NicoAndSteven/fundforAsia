@@ -35,7 +35,7 @@ export function FlowCreateDialog({ isOpen, onClose, onFlowCreated }: FlowCreateD
 
   const handleCreate = async () => {
     if (!name.trim()) {
-      error('Flow name is required');
+      error('流程名称不能为空');
       return;
     }
 
@@ -49,12 +49,12 @@ export function FlowCreateDialog({ isOpen, onClose, onFlowCreated }: FlowCreateD
         viewport: { x: 0, y: 0, zoom: 1 },
       });
       
-      success(`"${newFlow.name}" created!`);
+      success(`"${newFlow.name}" 已创建`);
       onFlowCreated(newFlow);
       onClose();
     } catch (err) {
       console.error('Failed to create flow:', err);
-      error('Failed to create flow');
+      error('创建流程失败');
     } finally {
       setIsLoading(false);
     }
@@ -80,23 +80,23 @@ export function FlowCreateDialog({ isOpen, onClose, onFlowCreated }: FlowCreateD
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create New Flow</DialogTitle>
+          <DialogTitle>创建新流程</DialogTitle>
           <DialogDescription>
-            Create a new flow with a custom name and description.
+            创建一个自定义名称和描述的新流程。
           </DialogDescription>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <label htmlFor="create-name" className="text-sm font-medium">
-              Name
+              名称
             </label>
             <Input
               id="create-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Enter flow name"
+              placeholder="输入流程名称"
               className="col-span-3"
               autoFocus
             />
@@ -104,14 +104,14 @@ export function FlowCreateDialog({ isOpen, onClose, onFlowCreated }: FlowCreateD
           
           <div className="grid gap-2">
             <label htmlFor="create-description" className="text-sm font-medium">
-              Description
+              描述
             </label>
             <Input
               id="create-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Enter flow description (optional)"
+              placeholder="输入流程描述（可选）"
               className="col-span-3"
             />
           </div>
@@ -119,13 +119,13 @@ export function FlowCreateDialog({ isOpen, onClose, onFlowCreated }: FlowCreateD
         
         <DialogFooter>
           <Button variant="outline" onClick={handleCancel}>
-            Cancel
+            取消
           </Button>
-          <Button 
-            onClick={handleCreate} 
+          <Button
+            onClick={handleCreate}
             disabled={isLoading || !name.trim()}
           >
-            {isLoading ? 'Creating...' : 'Create Flow'}
+            {isLoading ? '创建中...' : '创建流程'}
           </Button>
         </DialogFooter>
       </DialogContent>

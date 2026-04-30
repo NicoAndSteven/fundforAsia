@@ -22,7 +22,7 @@ export function AgentNode({
   isConnectable,
 }: NodeProps<AgentNode>) {
   const { currentFlowId } = useFlowContext();
-  const { getAgentNodeDataForFlow, setAgentModel, getAgentModel } = useNodeContext();
+  const { getAgentNodeDataForFlow, setAgentModel, getAgentModel, globalDefaultModel } = useNodeContext();
   
   // Get agent node data for the current flow
   const agentNodeData = getAgentNodeDataForFlow(currentFlowId?.toString() || null);
@@ -88,7 +88,7 @@ export function AgentNode({
         <div className="border-t border-border p-3">
           <div className="flex flex-col gap-2">
             <div className="text-subtitle text-primary flex items-center gap-1">
-              Status
+              状态
             </div>
 
             <div className={cn(
@@ -107,26 +107,31 @@ export function AgentNode({
             <Accordion type="single" collapsible>
               <AccordionItem value="advanced" className="border-none">
                 <AccordionTrigger className="!text-subtitle text-primary">
-                  Advanced
+                  高级
                 </AccordionTrigger>
                 <AccordionContent className="pt-2">
                   <div className="flex flex-col gap-2">
                     <div className="text-subtitle text-primary flex items-center gap-1">
-                      Model
+                      模型
                     </div>
                     <ModelSelector
                       models={availableModels}
-                      value={selectedModel?.model_name || ""}
+                      value={selectedModel?.model_name || globalDefaultModel?.model_name || ""}
                       onChange={handleModelChange}
-                      placeholder="Auto"
+                      placeholder="自动"
                     />
                     {selectedModel && (
                       <button
                         onClick={handleUseGlobalModel}
                         className="text-subtitle text-primary hover:text-foreground transition-colors text-left"
                       >
-                        Reset to Auto
+                        恢复全局默认
                       </button>
+                    )}
+                    {!selectedModel && globalDefaultModel && (
+                      <span className="text-subtitle text-muted-foreground text-xs">
+                        全局: {globalDefaultModel.display_name}
+                      </span>
                     )}
                   </div>
                 </AccordionContent>

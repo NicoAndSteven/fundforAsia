@@ -17,7 +17,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import '@xyflow/react/dist/style.css';
 
+import { Button } from '@/components/ui/button';
 import { useFlowContext } from '@/contexts/flow-context';
+import { Trash2 } from 'lucide-react';
 import { useEnhancedFlowActions } from '@/hooks/use-enhanced-flow-actions';
 import { useFlowHistory } from '@/hooks/use-flow-history';
 import { useFlowKeyboardShortcuts, useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
@@ -43,7 +45,7 @@ export function Flow({ className = '' }: FlowProps) {
   const proOptions = { hideAttribution: true };
   
   // Get flow context for flow ID
-  const { currentFlowId } = useFlowContext();
+  const { currentFlowId, markAsUnsaved } = useFlowContext();
   
   // Get enhanced flow actions for complete state persistence
   const { saveCurrentFlowWithCompleteState } = useEnhancedFlowActions();
@@ -199,12 +201,12 @@ export function Flow({ className = '' }: FlowProps) {
     try {
       const savedFlow = await saveCurrentFlowWithCompleteState();
       if (savedFlow) {
-        success(`"${savedFlow.name}" saved!`, 'flow-save');
+        success(`"${savedFlow.name}" 已保存！`, 'flow-save');
       } else {
-        error('Failed to save flow', 'flow-save-error');
+        error('保存流程失败', 'flow-save-error');
       }
     } catch (err) {
-      error('Failed to save flow', 'flow-save-error');
+      error('保存流程失败', 'flow-save-error');
     }
   });
 
@@ -281,14 +283,27 @@ export function Flow({ className = '' }: FlowProps) {
   const backgroundStyle = {
     backgroundColor: 'hsl(var(--background))'
   };
-  
-  const gridColor = resolvedTheme === 'light' ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))';
+
+  const gridColor = resolvedTheme === 'light' ? 'hsl(var(--muted-foreground)/0.3)' : 'hsl(var(--muted-foreground)/0.15)';
+
+  const clearCanvas = useCallback(() => {
+    if (nodes.length === 0 && edges.length === 0) return;
+    if (window.confirm('确定要清空画布吗？')) {
+      setNodes([]);
+      setEdges([]);
+      markAsUnsaved();
+    }
+  }, [nodes.length, edges.length, setNodes, setEdges, markAsUnsaved]);
 
   return (
     <div className={`w-full h-full ${className}`}>
       <TooltipProvider>
         <ReactFlow
           nodes={nodes}
+          defaultEdgeOptions={{
+            style: { strokeWidth: 2, stroke: 'hsl(var(--primary)/0.3)' },
+            markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 },
+          }}
           nodeTypes={nodeTypes}
           onNodesChange={handleNodesChange}
           edges={edges}
@@ -298,15 +313,33 @@ export function Flow({ className = '' }: FlowProps) {
           onInit={onInit}
           colorMode={colorMode}
           proOptions={proOptions}
+          minZoom={0.2}
+          maxZoom={2.5}
+          fitView
         >
-          <Background 
+          <Background
             variant={BackgroundVariant.Dots}
-            gap={13}
+            gap={20}
+            size={1.5}
             color={gridColor}
             style={backgroundStyle}
           />
           {/* <CustomControls onReset={resetFlow} /> */}
         </ReactFlow>
+
+        {/* Clear canvas button */}
+        {nodes.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={clearCanvas}
+            className="absolute bottom-4 left-4 z-10 h-8 text-xs gap-1.5 bg-background/80 backdrop-blur-sm shadow-sm"
+            aria-label="清空画布"
+          >
+            <Trash2 size={12} />
+            清空画布
+          </Button>
+        )}
       </TooltipProvider>
     </div>
   );

@@ -53,7 +53,7 @@ export function StockAnalyzerNode({
   
   const { currentFlowId } = useFlowContext();
   const nodeContext = useNodeContext();
-  const { getAllAgentModels } = nodeContext;
+  const { getAllAgentModels, globalDefaultModel } = nodeContext;
   const { getNodes, getEdges } = useReactFlow();
   const { expandBottomPanel, setBottomPanelTab } = useLayoutContext();
   
@@ -186,8 +186,8 @@ export function StockAnalyzerNode({
         end_date: endDate,
         initial_capital: parseFloat(initialCash) || 100000,
         margin_requirement: 0.0,
-        model_name: undefined,
-        model_provider: undefined,
+        model_name: globalDefaultModel?.model_name || undefined,
+        model_provider: globalDefaultModel?.provider || undefined,
       });
     } else {
       runFlow({
@@ -200,8 +200,8 @@ export function StockAnalyzerNode({
         })),
         graph_edges: validEdges,
         agent_models: agentModels,
-        model_name: undefined,
-        model_provider: undefined,
+        model_name: globalDefaultModel?.model_name || undefined,
+        model_provider: globalDefaultModel?.provider || undefined,
         start_date: startDate,
         end_date: endDate,
       });
@@ -320,7 +320,7 @@ export function StockAnalyzerNode({
                             </div>
                             <Input
                               type="text"
-                              placeholder="100,000"
+                              placeholder="金额"
                               value={formatCurrency(initialCash)}
                               onChange={handleInitialCashChange}
                               className="pl-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"

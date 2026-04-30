@@ -23,7 +23,7 @@ export function PortfolioManagerNode({
   isConnectable,
 }: NodeProps<PortfolioManagerNode>) {
   const { currentFlowId } = useFlowContext();
-  const { getAgentNodeDataForFlow, setAgentModel, getAgentModel, getOutputNodeDataForFlow } = useNodeContext();
+  const { getAgentNodeDataForFlow, setAgentModel, getAgentModel, getOutputNodeDataForFlow, globalDefaultModel } = useNodeContext();
 
   // Get agent node data for the current flow
   const agentNodeData = getAgentNodeDataForFlow(currentFlowId?.toString() || null);
@@ -99,7 +99,7 @@ export function PortfolioManagerNode({
         isConnectable={isConnectable}
         icon={<Brain className="h-5 w-5" />}
         iconColor={getStatusColor(status)}
-        name={data.name || 'Portfolio Manager'}
+        name={data.name || '投资组合经理'}
         description={data.description}
         hasRightHandle={false}
         status={status}
@@ -109,7 +109,7 @@ export function PortfolioManagerNode({
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
                 <div className="text-subtitle text-primary flex items-center gap-1">
-                  Status
+                  状态
                 </div>
 
                 <div
@@ -129,19 +129,19 @@ export function PortfolioManagerNode({
                     size="sm"
                     onClick={() => setIsDialogOpen(true)}
                   >
-                    View Investment Report
+                    查看投资报告
                   </Button>
                 )}
               </div>
               <div className="flex flex-col gap-2">
                 <div className="text-subtitle text-primary flex items-center gap-1">
-                  Model
+                  模型
                 </div>
                 <ModelSelector
                   models={availableModels}
-                  value={selectedModel?.model_name || ''}
+                  value={selectedModel?.model_name || globalDefaultModel?.model_name || ''}
                   onChange={handleModelChange}
-                  placeholder="Auto"
+                  placeholder="自动"
                 />
               </div>
             </div>

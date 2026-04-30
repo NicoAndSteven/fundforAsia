@@ -72,6 +72,37 @@ class LineItem(BaseModel):
     report_period: str
     period: str
     currency: str
+    free_cash_flow: Optional[float] = None
+    total_debt: Optional[float] = None
+    total_assets: Optional[float] = None
+    total_liabilities: Optional[float] = None
+    current_assets: Optional[float] = None
+    current_liabilities: Optional[float] = None
+    shareholders_equity: Optional[float] = None
+    cash_and_equivalents: Optional[float] = None
+    capital_expenditure: Optional[float] = None
+    operating_income: Optional[float] = None
+    working_capital: Optional[float] = None
+    ebitda: Optional[float] = None
+    revenue: Optional[float] = None
+    outstanding_shares: Optional[float] = None
+    operating_margin: Optional[float] = None
+    gross_margin: Optional[float] = None
+    gross_profit: Optional[float] = None
+    net_income: Optional[float] = None
+    earnings_per_share: Optional[float] = None
+    book_value_per_share: Optional[float] = None
+    ebit: Optional[float] = None
+    debt_to_equity: Optional[float] = None
+    interest_expense: Optional[float] = None
+    research_and_development: Optional[float] = None
+    operating_expense: Optional[float] = None
+    depreciation_and_amortization: Optional[float] = None
+    intangible_assets: Optional[float] = None
+    goodwill_and_intangible_assets: Optional[float] = None
+    return_on_invested_capital: Optional[float] = None
+    dividends_and_other_cash_distributions: Optional[float] = None
+    issuance_or_purchase_of_equity_shares: Optional[float] = None
 
     model_config = {"extra": "allow"}
 

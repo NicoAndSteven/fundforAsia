@@ -1,6 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { BarChart3, PanelBottom, PanelLeft, PanelRight, Settings } from 'lucide-react';
+import { QuickAnalysis } from '@/components/quick-analysis';
+import { GlobalModelSelector } from '@/components/ui/global-model-selector';
 
 interface TopBarProps {
   isLeftCollapsed: boolean;
@@ -84,6 +86,14 @@ export function TopBar({
           <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse opacity-70" />
         </Button>
       )}
+
+      <div className="w-px h-5 bg-ramp-grey-700 mx-1" />
+
+      <QuickAnalysis />
+
+      <div className="w-px h-5 bg-ramp-grey-700 mx-1" />
+
+      <GlobalModelSelector />
 
       <div className="w-px h-5 bg-ramp-grey-700 mx-1" />
 

@@ -8,11 +8,13 @@ export type NodeStatus = 'IDLE' | 'IN_PROGRESS' | 'COMPLETE' | 'ERROR';
 export function getStatusColor(status: NodeStatus): string {
   switch (status) {
     case 'IN_PROGRESS':
-      return 'bg-amber-500  dark:bg-amber-80';
+      return 'bg-amber-500 dark:bg-amber-600';
     case 'ERROR':
-      return 'bg-red-500 dark:bg-red-800';
+      return 'bg-red-500 dark:bg-red-700';
+    case 'COMPLETE':
+      return 'bg-emerald-500 dark:bg-emerald-600';
     default:
-      return 'bg-node';
+      return 'bg-primary/10 text-primary';
   }
 }
 

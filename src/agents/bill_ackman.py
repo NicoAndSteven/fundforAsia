@@ -460,9 +460,10 @@ def generate_ackman_output(
         )
 
     return call_llm(
-        prompt=prompt, 
-        pydantic_model=BillAckmanSignal, 
-        agent_name=agent_id, 
+        prompt=prompt,
+        pydantic_model=BillAckmanSignal,
+        agent_name=agent_id,
         state=state,
         default_factory=create_default_bill_ackman_signal,
+        score_fallback=(analysis_data.get("score"), analysis_data.get("max_score")),
     )

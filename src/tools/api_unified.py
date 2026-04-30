@@ -152,3 +152,16 @@ def get_intraday_prices(
     """
     adapter = get_ef_adapter()
     return adapter.get_intraday_prices(ticker, date, frequency, api_key)
+
+
+def get_sector_stocks(sector_code: str) -> List[str]:
+    """获取指定板块的所有成分股代码。
+
+    Args:
+        sector_code: 板块代码，如 "BK0420"（半导体）
+
+    Returns:
+        股票代码列表
+    """
+    adapter = get_ef_adapter()
+    return adapter.get_sector_stocks(sector_code)

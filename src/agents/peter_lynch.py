@@ -504,4 +504,5 @@ def generate_lynch_output(
         agent_name=agent_id,
         state=state,
         default_factory=create_default_signal,
+        score_fallback=(analysis_data.get("score"), analysis_data.get("max_score")),
     )

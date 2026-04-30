@@ -600,4 +600,5 @@ def generate_fisher_output(
         state=state,
         agent_name=agent_id,
         default_factory=create_default_signal,
+        score_fallback=(analysis_data.get("score"), analysis_data.get("max_score")),
     )

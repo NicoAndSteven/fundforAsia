@@ -1,14 +1,25 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { DashboardData, fetchDashboard } from '@/services/market-service';
+import { useTabsContext } from '@/contexts/tabs-context';
 import * as echarts from 'echarts';
 import { cn } from '@/lib/utils';
 import { X, RefreshCw, TrendingUp, TrendingDown, Minus, AlertCircle } from 'lucide-react';
 
 interface MarketDashboardProps {
   onClose?: () => void;
+  [key: string]: any;
 }
 
-export function MarketDashboard({ onClose }: MarketDashboardProps) {
+export function MarketDashboard({}: MarketDashboardProps) {
+  const { tabs, closeTab, setActiveTab } = useTabsContext();
+  const handleClose = useCallback(() => {
+    // Find the next tab to switch to before closing dashboard
+    const otherTab = tabs.find(t => t.id !== 'market-dashboard');
+    if (otherTab) {
+      setActiveTab(otherTab.id);
+    }
+    closeTab('market-dashboard');
+  }, [tabs, closeTab, setActiveTab]);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -228,11 +239,9 @@ export function MarketDashboard({ onClose }: MarketDashboardProps) {
             >
               <RefreshCw size={16} />
             </button>
-            {onClose && (
-              <button onClick={onClose} className="p-1.5 text-slate-500 hover:text-white transition-colors">
-                <X size={16} />
-              </button>
-            )}
+            <button onClick={handleClose} className="p-1.5 text-slate-500 hover:text-white transition-colors" title="返回工作流">
+              <X size={16} />
+            </button>
           </div>
         </div>
 
@@ -291,16 +300,18 @@ export function MarketDashboard({ onClose }: MarketDashboardProps) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Market Breadth */}
           <div className="lg:col-span-1 rounded-lg border border-slate-800 bg-slate-900/40 backdrop-blur-sm p-4">
-            <h3 className="text-xs font-mono text-cyan-500/80 mb-3 tracking-wider">MARKET BREADTH</h3>
+            <h3 className="text-xs font-mono text-cyan-500/80 mb-3 tracking-wider">
+              {b?.source === 'sectors' ? 'SECTOR BREADTH' : 'MARKET BREADTH'}
+            </h3>
             <div className="flex items-center gap-6">
               <div ref={breadthChartRef} className="w-28 h-28 flex-shrink-0" />
               <div className="space-y-2 flex-1">
                 <div className="flex justify-between text-sm">
-                  <span className="text-red-400 font-mono">上涨</span>
+                  <span className="text-red-400 font-mono">{b?.source === 'sectors' ? '板块上涨' : '上涨'}</span>
                   <span className="text-red-400 font-mono font-bold">{b?.up ?? 0}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-green-400 font-mono">下跌</span>
+                  <span className="text-green-400 font-mono">{b?.source === 'sectors' ? '板块下跌' : '下跌'}</span>
                   <span className="text-green-400 font-mono font-bold">{b?.down ?? 0}</span>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -308,14 +319,18 @@ export function MarketDashboard({ onClose }: MarketDashboardProps) {
                   <span className="text-slate-500 font-mono font-bold">{b?.flat ?? 0}</span>
                 </div>
                 <div className="h-px bg-slate-800 my-2" />
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-600 font-mono">涨停</span>
-                  <span className="text-red-500 font-mono">{data?.limit_up_count ?? 0}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-600 font-mono">跌停</span>
-                  <span className="text-green-500 font-mono">{data?.limit_down_count ?? 0}</span>
-                </div>
+                {b?.source !== 'sectors' && (
+                  <>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-600 font-mono">涨停</span>
+                      <span className="text-red-500 font-mono">{data?.limit_up_count ?? 0}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-600 font-mono">跌停</span>
+                      <span className="text-green-500 font-mono">{data?.limit_down_count ?? 0}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between text-xs">
                   <span className="text-slate-600 font-mono">上涨占比</span>
                   <span className="text-cyan-400 font-mono">{b?.up_ratio ?? 0}%</span>

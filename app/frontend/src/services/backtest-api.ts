@@ -157,8 +157,9 @@ export const backtestApi = {
                           performance_metrics: eventData.data.performance_metrics,
                           final_portfolio: eventData.data.final_portfolio,
                           total_days: eventData.data.total_days,
+                          master_report: eventData.data.master_report,
                         };
-                        
+
                         nodeContext.setOutputNodeData(flowId, backtestResults);
                       }
                       

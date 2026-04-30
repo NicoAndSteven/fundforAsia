@@ -14,9 +14,13 @@ def call_llm(
     state: AgentState | None = None,
     max_retries: int = 3,
     default_factory=None,
+    score_fallback: tuple[float, float] | None = None,
 ) -> BaseModel:
     """
     Makes an LLM call with retry logic, handling both JSON supported and non-JSON supported models.
+
+    When use_llm_judgment is False and score_fallback is provided, uses a rule-based
+    signal instead of calling the LLM (saves API costs).
 
     Args:
         prompt: The prompt to send to the LLM
@@ -25,18 +29,49 @@ def call_llm(
         state: Optional state object to extract agent-specific model configuration
         max_retries: Maximum number of retries (default: 3)
         default_factory: Optional factory function to create default response on failure
+        score_fallback: Optional (score, max_score) tuple for rule-based signal when LLM judgment is off
 
     Returns:
         An instance of the specified Pydantic model
     """
+
+    # ── Rule-based bypass when LLM judgment is disabled ──
+    if score_fallback is not None and state:
+        request = state.get("metadata", {}).get("request")
+        use_llm = getattr(request, "use_llm_judgment", True) if request else True
+        if not use_llm:
+            score, max_score = score_fallback
+            ratio = (score / max_score) if max_score > 0 else 0.5
+            ratio = max(0.0, min(1.0, ratio))
+            if ratio > 0.6:
+                signal = "bullish"
+                confidence = int(ratio * 100)
+            elif ratio < 0.4:
+                signal = "bearish"
+                confidence = int((1 - ratio) * 100)
+            else:
+                signal = "neutral"
+                confidence = 50
+            try:
+                return pydantic_model(
+                    signal=signal,
+                    confidence=min(confidence, 100),
+                    reasoning="Rule-based signal (LLM judgment disabled)",
+                )
+            except Exception:
+                return pydantic_model(
+                    signal="neutral",
+                    confidence=50,
+                    reasoning="Rule-based signal default (LLM judgment disabled)",
+                )
     
     # Extract model configuration if state is provided and agent_name is available
     if state and agent_name:
         model_name, model_provider = get_agent_model_config(state, agent_name)
     else:
         # Use system defaults when no state or agent_name is provided
-        model_name = "gpt-4.1"
-        model_provider = "OPENAI"
+        model_name = "deepseek-chat"
+        model_provider = "DeepSeek"
 
     # Extract API keys from state if available
     api_keys = None
@@ -137,8 +172,8 @@ def get_agent_model_config(state, agent_name):
             return model_name, model_provider.value if hasattr(model_provider, 'value') else str(model_provider)
     
     # Fall back to global configuration (system defaults)
-    model_name = state.get("metadata", {}).get("model_name") or "gpt-4.1"
-    model_provider = state.get("metadata", {}).get("model_provider") or "OPENAI"
+    model_name = state.get("metadata", {}).get("model_name") or "deepseek-chat"
+    model_provider = state.get("metadata", {}).get("model_provider") or "DeepSeek"
     
     # Convert enum to string if necessary
     if hasattr(model_provider, 'value'):

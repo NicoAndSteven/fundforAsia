@@ -3,4 +3,5 @@ export { OutputTab } from '@/components/panels/bottom/tabs/output-tab';
 export { ProblemsTab } from '@/components/panels/bottom/tabs/problems-tab';
 export { TerminalTab } from '@/components/panels/bottom/tabs/terminal-tab';
 export { ConsensusTab } from '@/components/panels/bottom/tabs/consensus-tab';
+export { MasterRecommendations } from '@/components/panels/bottom/tabs/master-recommendations';
 

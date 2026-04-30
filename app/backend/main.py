@@ -2,6 +2,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+from dotenv import load_dotenv
+from pathlib import Path
+
+# Load .env file from project root
+env_path = Path(__file__).resolve().parents[2] / '.env'
+load_dotenv(dotenv_path=env_path)
 
 from app.backend.routes import api_router
 from app.backend.database.connection import engine

@@ -43,6 +43,33 @@ export interface OutputNodeData {
     positions: Record<string, any>;
   };
   total_days?: number;
+  master_report?: {
+    summary: string;
+    consensus_picks: Array<{
+      ticker: string;
+      consensus_score: number;
+      bullish_count: number;
+      bearish_count: number;
+      neutral_count: number;
+      total_analysts: number;
+      top_bullish_analysts: string[];
+    }>;
+    master_performances: Array<{
+      analyst_key: string;
+      analyst_name: string;
+      total_predictions: number;
+      correct_predictions: number;
+      win_rate: number;
+    }>;
+    master_picks: Record<string, Array<{
+      ticker: string;
+      signal: string;
+      confidence: number;
+      analyst_key: string;
+      analyst_name: string;
+    }>>;
+    generated_at: string;
+  };
 }
 
 // Default agent node state
@@ -63,10 +90,12 @@ function createCompositeKey(flowId: string | null, nodeId: string): string {
 interface NodeContextType {
   agentNodeData: Record<string, AgentNodeData>;
   outputNodeData: OutputNodeData | null;
+  globalDefaultModel: LanguageModel | null;
   agentModels: Record<string, LanguageModel | null>;
   updateAgentNode: (flowId: string | null, nodeId: string, data: Partial<AgentNodeData> | NodeStatus) => void;
   updateAgentNodes: (flowId: string | null, nodeIds: string[], status: NodeStatus) => void;
   setOutputNodeData: (flowId: string | null, data: OutputNodeData) => void;
+  setGlobalDefaultModel: (model: LanguageModel | null) => void;
   setAgentModel: (flowId: string | null, nodeId: string, model: LanguageModel | null) => void;
   getAgentModel: (flowId: string | null, nodeId: string) => LanguageModel | null;
   getAllAgentModels: (flowId: string | null) => Record<string, LanguageModel | null>;
@@ -92,6 +121,29 @@ export function NodeProvider({ children }: { children: ReactNode }) {
   const [agentNodeData, setAgentNodeData] = useState<Record<string, AgentNodeData>>({});
   // Flow-aware output node data storage
   const [outputNodeData, setOutputNodeData] = useState<Record<string, OutputNodeData>>({});
+  // Global default model (persisted to localStorage)
+  const [globalDefaultModel, setGlobalDefaultModel] = useState<LanguageModel | null>(() => {
+    try {
+      const stored = localStorage.getItem('globalDefaultModel');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const handleSetGlobalDefaultModel = useCallback((model: LanguageModel | null) => {
+    setGlobalDefaultModel(model);
+    try {
+      if (model) {
+        localStorage.setItem('globalDefaultModel', JSON.stringify(model));
+      } else {
+        localStorage.removeItem('globalDefaultModel');
+      }
+    } catch {
+      // localStorage not available
+    }
+  }, []);
+
   // Agent models also need to be flow-aware to maintain model selections per flow
   const [agentModels, setAgentModels] = useState<Record<string, LanguageModel | null>>({});
 
@@ -404,10 +456,12 @@ export function NodeProvider({ children }: { children: ReactNode }) {
     // Components should use the explicit flow-based functions instead
     agentNodeData: {},
     outputNodeData: null,
+    globalDefaultModel,
     agentModels,
     updateAgentNode,
     updateAgentNodes,
     setOutputNodeData: setOutputNodeDataForFlow,
+    setGlobalDefaultModel: handleSetGlobalDefaultModel,
     setAgentModel,
     getAgentModel,
     getAllAgentModels,

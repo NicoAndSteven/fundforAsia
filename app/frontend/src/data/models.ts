@@ -3,7 +3,7 @@ import { api } from '@/services/api';
 export interface LanguageModel {
   display_name: string;
   model_name: string;
-  provider: "Anthropic" | "DeepSeek" | "Google" | "Groq" | "OpenAI";
+  provider: string;
 }
 
 // Cache for models to avoid repeated API calls
@@ -33,7 +33,8 @@ export const getModels = async (): Promise<LanguageModel[]> => {
 export const getDefaultModel = async (): Promise<LanguageModel | null> => {
   try {
     const models = await getModels();
-    return models.find(model => model.model_name === "gpt-4.1") || models[0] || null;
+    // Prefer DeepSeek V3 as default, fall back to first available model
+    return models.find(model => model.model_name === "deepseek-chat") || models[0] || null;
   } catch (error) {
     console.error('Failed to get default model:', error);
     return null;

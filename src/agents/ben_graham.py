@@ -345,4 +345,5 @@ def generate_graham_output(
         agent_name=agent_id,
         state=state,
         default_factory=create_default_ben_graham_signal,
+        score_fallback=(analysis_data.get("score"), analysis_data.get("max_score")),
     )

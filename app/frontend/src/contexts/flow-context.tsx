@@ -16,6 +16,7 @@ interface FlowContextType {
   currentFlowName: string;
   isUnsaved: boolean;
   reactFlowInstance: ReactFlowInstance;
+  markAsUnsaved: () => void;
 }
 
 const FlowContext = createContext<FlowContextType | null>(null);
@@ -35,7 +36,7 @@ interface FlowProviderProps {
 export function FlowProvider({ children }: FlowProviderProps) {
   const reactFlowInstance = useReactFlow();
   const [currentFlowId, setCurrentFlowId] = useState<number | null>(null);
-  const [currentFlowName, setCurrentFlowName] = useState('Untitled Flow');
+  const [currentFlowName, setCurrentFlowName] = useState('未命名流程');
   const [isUnsaved, setIsUnsaved] = useState(false);
 
   // Calculate viewport center position with optional randomness
@@ -193,7 +194,7 @@ export function FlowProvider({ children }: FlowProviderProps) {
       // CRITICAL: Reset flow ID FIRST, before clearing nodes
       setNodeStateFlowId(null);
       setCurrentFlowId(null);
-      setCurrentFlowName('Untitled Flow');
+      setCurrentFlowName('未命名流程');
       
       // Clear all node states for the current flow
       clearAllNodeStates();
@@ -348,6 +349,7 @@ export function FlowProvider({ children }: FlowProviderProps) {
     currentFlowName,
     isUnsaved,
     reactFlowInstance,
+    markAsUnsaved,
   };
 
   return (

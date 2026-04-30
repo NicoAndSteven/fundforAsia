@@ -26,13 +26,14 @@ export interface MarketBreadth {
   up: number;
   down: number;
   flat: number;
-  up_gt_5: number;
-  up_3_5: number;
-  up_0_3: number;
-  down_gt_5: number;
-  down_3_5: number;
-  down_0_3: number;
+  up_gt_5?: number;
+  up_3_5?: number;
+  up_0_3?: number;
+  down_gt_5?: number;
+  down_3_5?: number;
+  down_0_3?: number;
   up_ratio: number;
+  source?: 'stocks' | 'sectors';
 }
 
 export interface StockMoveItem {
@@ -65,5 +66,35 @@ export async function fetchDashboard(): Promise<DashboardData> {
   if (!resp.ok) {
     throw new Error(`HTTP ${resp.status}`);
   }
+  return resp.json();
+}
+
+/* ── 板块 / ETF 相关 ── */
+
+export interface SectorItem {
+  code: string;
+  name: string;
+  change_pct: number | null;
+  current: number | null;
+  etf_code: string;
+  has_etf: boolean;
+}
+
+export interface SectorEtfResult {
+  sector_code: string;
+  etf_code: string;
+  has_etf: boolean;
+}
+
+export async function fetchSectors(): Promise<SectorItem[]> {
+  const resp = await fetch(`${API_BASE_URL}/market/sectors`);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return resp.json();
+}
+
+export async function fetchSectorEtf(sectorCode: string, sectorName?: string): Promise<SectorEtfResult> {
+  const params = sectorName ? `?name=${encodeURIComponent(sectorName)}` : '';
+  const resp = await fetch(`${API_BASE_URL}/market/sector/${sectorCode}/etf${params}`);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
   return resp.json();
 }

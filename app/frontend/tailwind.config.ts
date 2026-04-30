@@ -28,7 +28,7 @@ const config: Config = {
   				}
   			],
   			subtitle: [
-  				'0.625rem',
+  				'0.75rem',
   				{
   					lineHeight: '1rem'
   				}

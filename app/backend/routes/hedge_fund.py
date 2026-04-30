@@ -1,5 +1,8 @@
-from fastapi import APIRouter, HTTPException, Request, Depends
+from datetime import datetime, timedelta
+from typing import List, Optional
+from fastapi import APIRouter, HTTPException, Request, Depends, Query
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 import asyncio
 
@@ -8,10 +11,11 @@ from app.backend.models.schemas import ErrorResponse, HedgeFundRequest, Backtest
 from app.backend.models.events import StartEvent, ProgressUpdateEvent, ErrorEvent, CompleteEvent
 from app.backend.services.graph import create_graph, parse_hedge_fund_response, run_graph_async
 from app.backend.services.portfolio import create_portfolio
+from app.backend.services.sector_service import generate_master_report
 from app.backend.services.backtest_service import BacktestService
 from app.backend.services.api_key_service import ApiKeyService
 from src.utils.progress import progress
-from src.utils.analysts import get_agents_list
+from src.utils.analysts import get_agents_list, ANALYST_CONFIG
 
 router = APIRouter(prefix="/hedge-fund")
 
@@ -303,11 +307,13 @@ async def backtest(request_data: BacktestRequest, request: Request, db: Session 
 
                 # Send the final result
                 performance_metrics = BacktestPerformanceMetrics(**result["performance_metrics"])
+                master_report = generate_master_report(result.get("results", []))
                 final_data = CompleteEvent(
                     data={
                         "performance_metrics": performance_metrics.model_dump(),
                         "final_portfolio": result["final_portfolio"],
                         "total_days": len(result["results"]),
+                        "master_report": master_report.model_dump(),
                     }
                 )
                 yield final_data.to_sse()
@@ -334,6 +340,103 @@ async def backtest(request_data: BacktestRequest, request: Request, db: Session 
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred while processing the backtest request: {str(e)}")
+
+
+class QuickAnalysisRequest(BaseModel):
+    """一键分析请求"""
+    tickers: List[str]
+    lookback_days: int = 60
+    initial_capital: float = 100000.0
+    model_name: Optional[str] = None
+    model_provider: Optional[str] = None
+    use_llm_judgment: bool = True
+
+
+@router.post(
+    path="/quick-analysis",
+    responses={
+        200: {"description": "Quick analysis result with master recommendations"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
+async def quick_analysis(request_data: QuickAnalysisRequest, request: Request, db: Session = Depends(get_db)):
+    """一键分析：输入股票/ETF代码，自动运行所有大师分析，返回推荐和胜率排行。
+
+    无需构建流程图，系统自动使用全部大师分析师。
+    """
+    from src.graph.state import AgentState
+    from langgraph.graph import END, StateGraph
+    from src.main import start
+    from src.agents.portfolio_manager import portfolio_management_agent
+    from src.agents.risk_manager import risk_management_agent
+    from app.backend.services.agent_service import create_agent_function
+
+    try:
+        # 计算日期范围
+        end_date = datetime.now().strftime("%Y-%m-%d")
+        start_date = (datetime.now() - timedelta(days=request_data.lookback_days)).strftime("%Y-%m-%d")
+
+        # 1. 构建默认图（包含所有分析师）
+        graph = StateGraph(AgentState)
+        graph.add_node("start_node", start)
+
+        analyst_node_ids = []
+        for key, config in ANALYST_CONFIG.items():
+            node_name = f"{key}_agent"
+            func = create_agent_function(config["agent_func"], node_name)
+            graph.add_node(node_name, func)
+            graph.add_edge("start_node", node_name)
+            analyst_node_ids.append(node_name)
+
+        # 风险管理 + 组合管理
+        graph.add_node("risk_management_agent", risk_management_agent)
+        graph.add_node("portfolio_manager", portfolio_management_agent)
+        for nid in analyst_node_ids:
+            graph.add_edge(nid, "risk_management_agent")
+        graph.add_edge("risk_management_agent", "portfolio_manager")
+        graph.add_edge("portfolio_manager", END)
+        graph.set_entry_point("start_node")
+        compiled_graph = graph.compile()
+
+        # 2. 创建投资组合
+        portfolio = create_portfolio(
+            initial_cash=request_data.initial_capital,
+            margin_requirement=0.0,
+            tickers=request_data.tickers,
+        )
+
+        # 3. 运行回测
+        service = BacktestService(
+            graph=compiled_graph,
+            portfolio=portfolio,
+            tickers=request_data.tickers,
+            start_date=start_date,
+            end_date=end_date,
+            initial_capital=request_data.initial_capital,
+            model_name=request_data.model_name or "deepseek-chat",
+            model_provider=request_data.model_provider or "DeepSeek",
+            request=request_data,  # Pass full request for use_llm_judgment access
+        )
+
+        result = await service.run_backtest_async()
+
+        # 4. 生成大师报告
+        master_report = generate_master_report(result.get("results", []))
+
+        # 5. 返回结果
+        return {
+            "success": True,
+            "tickers": request_data.tickers,
+            "lookback_days": request_data.lookback_days,
+            "start_date": start_date,
+            "end_date": end_date,
+            "total_days": len(result.get("results", [])),
+            "master_report": master_report.model_dump(),
+            "performance_metrics": result.get("performance_metrics", {}),
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 
 @router.get(

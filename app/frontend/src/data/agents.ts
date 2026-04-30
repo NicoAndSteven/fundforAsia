@@ -16,7 +16,7 @@ let agents: Agent[] | null = null;
  * Uses caching to avoid repeated API calls
  */
 export const getAgents = async (): Promise<Agent[]> => {
-  if (agents) {
+  if (agents !== null) {
     return agents;
   }
   
@@ -24,7 +24,8 @@ export const getAgents = async (): Promise<Agent[]> => {
     agents = await api.getAgents();
     return agents;
   } catch (error) {
-    console.error('Failed to fetch agents:', error);
-    throw error; // Let the calling component handle the error
+    console.error('Failed to fetch agents, continuing with empty agent list:', error);
+    // Don't cache the failure - allow retry on next call
+    return [];
   }
 };

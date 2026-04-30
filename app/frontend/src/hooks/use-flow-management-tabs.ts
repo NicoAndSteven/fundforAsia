@@ -199,13 +199,13 @@ export function useFlowManagementTabs(): UseFlowManagementTabsReturn {
         localStorage.setItem('lastSelectedFlowId', savedFlow.id.toString());
         // Refresh the flows list
         await loadFlows();
-        success(`"${savedFlow.name}" saved!`, 'flow-save');
+        success(`"${savedFlow.name}" 已保存！`, 'flow-save');
       } else {
-        error('Failed to save flow', 'flow-save-error');
+        error('保存流程失败', 'flow-save-error');
       }
     } catch (err) {
       console.error('Failed to save flow:', err);
-      error('Failed to save flow', 'flow-save-error');
+      error('保存流程失败', 'flow-save-error');
     }
   }, [saveCurrentFlowWithStates, loadFlows, success, error]);
 
@@ -273,7 +273,7 @@ export function useFlowManagementTabs(): UseFlowManagementTabsReturn {
       localStorage.setItem('lastSelectedFlowId', fullFlow.id.toString());
     } catch (err) {
       console.error('Failed to open flow in tab:', err);
-      error('Failed to load flow data');
+      error('加载流程数据失败');
     }
   }, [isTabOpen, openTab, error]);
 

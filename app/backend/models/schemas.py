@@ -63,11 +63,12 @@ class BaseHedgeFundRequest(BaseModel):
     graph_nodes: List[GraphNode]
     graph_edges: List[GraphEdge]
     agent_models: Optional[List[AgentModelConfig]] = None
-    model_name: Optional[str] = "gpt-4.1"
-    model_provider: Optional[ModelProvider] = ModelProvider.OPENAI
+    model_name: Optional[str] = "deepseek-chat"
+    model_provider: Optional[ModelProvider] = ModelProvider.DEEPSEEK
     margin_requirement: float = 0.0
     portfolio_positions: Optional[List[PortfolioPosition]] = None
     api_keys: Optional[Dict[str, str]] = None
+    use_llm_judgment: bool = True
 
     def get_agent_ids(self) -> List[str]:
         """Extract agent IDs from graph structure"""
@@ -283,3 +284,41 @@ class ApiKeySummaryResponse(BaseModel):
 class ApiKeyBulkUpdateRequest(BaseModel):
     """Request to update multiple API keys at once"""
     api_keys: List[ApiKeyCreateRequest]
+
+
+class MasterStockPick(BaseModel):
+    """一只股票在 master_report 中的大师推荐信息"""
+    ticker: str
+    signal: str  # BULLISH / BEARISH / NEUTRAL
+    confidence: float
+    analyst_key: str
+    analyst_name: str
+
+
+class MasterPerformance(BaseModel):
+    """一位大师在回测中的表现"""
+    analyst_key: str
+    analyst_name: str
+    total_predictions: int
+    correct_predictions: int
+    win_rate: float
+
+
+class ConsensusPick(BaseModel):
+    """大师共识精选排行中的一项"""
+    ticker: str
+    consensus_score: float  # -1 ~ +1
+    bullish_count: int
+    bearish_count: int
+    neutral_count: int
+    total_analysts: int
+    top_bullish_analysts: List[str]
+
+
+class MasterReport(BaseModel):
+    """回测后自动生成的大师推荐报告"""
+    summary: str = ""
+    consensus_picks: List[ConsensusPick] = []
+    master_performances: List[MasterPerformance] = []
+    master_picks: Dict[str, List[MasterStockPick]] = {}
+    generated_at: str = ""

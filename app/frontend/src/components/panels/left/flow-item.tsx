@@ -174,7 +174,7 @@ export default function FlowItem({ flow, onLoadFlow, onDeleteFlow, onRefresh, is
             size="icon"
             onClick={handleMenuClick}
             className="h-6 w-6 text-muted-foreground hover-item opacity-0 group-hover:opacity-100 transition-opacity rounded"
-            title="More options"
+            title="更多选项"
           >
             <MoreHorizontal size={14} />
           </Button>

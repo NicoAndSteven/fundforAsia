@@ -52,6 +52,9 @@ class LLMModel(BaseModel):
         """Check if the model supports JSON mode"""
         if self.is_deepseek() or self.is_gemini():
             return False
+        # Thinking/reasoning models don't support JSON mode
+        if "thinking" in self.model_name.lower() or "reasoning" in self.model_name.lower():
+            return False
         # Only certain Ollama models support JSON mode
         if self.is_ollama():
             return "llama3" in self.model_name or "neural-chat" in self.model_name
@@ -80,7 +83,7 @@ class LLMModel(BaseModel):
 # Load models from JSON file
 def load_models_from_json(json_path: str) -> List[LLMModel]:
     """Load models from a JSON file"""
-    with open(json_path, 'r') as f:
+    with open(json_path, 'r', encoding='utf-8') as f:
         models_data = json.load(f)
     
     models = []

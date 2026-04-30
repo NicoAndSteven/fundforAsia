@@ -48,11 +48,11 @@ export class TabService {
     };
   }
 
-  static createMarketDashboardTab(): TabData & { content: ReactNode } {
+  static createMarketDashboardTab(onClose?: () => void): TabData & { content: ReactNode } {
     return {
       type: 'market-dashboard',
       title: '市场全景',
-      content: TabService.createTabContent({ type: 'market-dashboard', title: '市场全景' }),
+      content: createElement(MarketDashboard, { onClose }),
     };
   }
 

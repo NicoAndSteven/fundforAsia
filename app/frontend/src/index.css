@@ -354,3 +354,46 @@
 .react-flow__controls .react-flow__controls-button + .react-flow__controls-button {
   border-left: none !important;
 }
+
+/* Animated edge styling */
+@keyframes edgeFlow {
+  0% { stroke-dashoffset: 20; }
+  100% { stroke-dashoffset: 0; }
+}
+
+.react-flow__edge-path {
+  stroke-width: 2;
+  stroke: hsl(var(--primary) / 0.4);
+  transition: stroke 0.3s ease;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: hsl(var(--primary) / 0.8);
+  stroke-width: 2.5;
+}
+
+/* Animated dash for selected/active edges */
+.react-flow__edge.selected .react-flow__edge-path,
+.react-flow__edge.animated .react-flow__edge-path {
+  stroke-dasharray: 8 4;
+  animation: edgeFlow 1s linear infinite;
+}
+
+/* ReactFlow background enhancement */
+.react-flow__background {
+  opacity: 0.6;
+}
+
+/* Subtle grid pattern overlay for canvas depth */
+.react-flow__pane {
+  background-image:
+    radial-gradient(ellipse at 50% 0%, hsl(var(--primary) / 0.03) 0%, transparent 60%);
+}
+
+/* Update border-radius for animated container to match rounded-xl (0.75rem) */
+.animated-border-container {
+  border-radius: 0.75rem;
+}
+.animated-border-container::after {
+  border-radius: 0.75rem;
+}

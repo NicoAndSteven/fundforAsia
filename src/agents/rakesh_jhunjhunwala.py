@@ -705,4 +705,5 @@ def generate_jhunjhunwala_output(
         state=state,
         agent_name=agent_id,
         default_factory=create_default_rakesh_jhunjhunwala_signal,
+        score_fallback=(analysis_data.get("score"), analysis_data.get("max_score")),
     )

@@ -56,7 +56,7 @@ export default function ComponentItem({
           size="icon"
           className="h-5 w-5 hover-bg hover:text-primary text-muted-foreground flex items-center justify-center"
           onClick={handlePlusClick}
-          aria-label="Add"
+          aria-label="添加"
         >
           <Plus size={14} />
         </Button>
